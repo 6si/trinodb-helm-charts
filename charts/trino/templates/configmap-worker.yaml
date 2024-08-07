@@ -57,7 +57,7 @@ data:
     discovery.uri=http://{{ template "trino.fullname" . }}:{{ .Values.service.port }}
     retry-policy={{ .Values.server.config.retryPolicy }}
     {{- range $configValue := .Values.additionalConfigProperties }}
-    {{ $configValue }}
+    {{ tpl $configValue $ }}
     {{- end }}
     {{- if .Values.server.workerExtraConfig }}
     {{- .Values.server.workerExtraConfig | nindent 4 }}

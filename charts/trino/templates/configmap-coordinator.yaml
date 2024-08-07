@@ -64,7 +64,7 @@ data:
     http-server.authentication.type={{ .Values.server.config.authenticationType }}
     {{- end }}
     {{- range $configValue := .Values.additionalConfigProperties }}
-    {{ $configValue }}
+    {{ tpl $configValue $ }}
     {{- end }}
     {{- if .Values.server.config.https.enabled }}
     http-server.https.enabled=true
