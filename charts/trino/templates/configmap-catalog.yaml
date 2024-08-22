@@ -15,5 +15,5 @@ data:
     tpcds.splits-per-node=4
 {{- range $catalogName, $catalogProperties := .Values.additionalCatalogs }}
   {{ $catalogName }}.properties: |
-    {{- $catalogProperties | nindent 4 }}
+    {{- tpl $catalogProperties $ | nindent 4 }}
 {{- end }}
