@@ -15,9 +15,9 @@ spec:
       args:
     {{- if .Values.server.config.https.enabled }}
       # port must match coordinator.additionalExposedPorts
-      - trino://{{ include "trino.fullname" . }}.{{ .Release.Namespace }}:8443?SSL=true&SSLVerification=FULL&SSLTrustStorePath=/etc/trino/certificates/tls.crt
+      - --server=https://{{ include "trino.fullname" . }}.{{ .Release.Namespace }}:8443?SSL=true&SSLVerification=FULL&SSLTrustStorePath=/etc/trino/certificates/tls.crt
     {{- else }}
-      - trino://{{ include "trino.fullname" . }}:{{ .Values.service.port }}
+      - --server=http://{{ include "trino.fullname" . }}:{{ .Values.service.port }}
     {{- end }}
       - --user=admin
     {{- if eq .Values.server.config.authenticationType "PASSWORD" }}
@@ -25,7 +25,7 @@ spec:
     {{- end }}
       - --debug
       - --network-logging=BODY
-      - --execute=SELECT 1
+      - --execute="SELECT 1"
     {{- if eq .Values.server.config.authenticationType "PASSWORD" }}
       env:
         - name: TRINO_PASSWORD
