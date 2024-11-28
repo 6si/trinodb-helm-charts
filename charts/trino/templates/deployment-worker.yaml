@@ -49,9 +49,11 @@ spec:
         - name: catalog-volume
           configMap:
             name: {{ template "trino.catalog" . }}
+        {{- if .Values.kafka.tableDescriptions }}
         - name: schemas-volume
           configMap:
             name: {{ template "trino.fullname" . }}-schemas-volume-worker
+        {{- end }}
         - name: shutdown-volume
           configMap:
             name: {{ template "trino.fullname" . }}-shutdown-volume-worker
@@ -103,8 +105,10 @@ spec:
               name: config-volume
             - mountPath: {{ .Values.server.config.path }}/catalog
               name: catalog-volume
+            {{- if .Values.kafka.tableDescriptions }}
             - mountPath: {{ .Values.kafka.mountPath }}
               name: schemas-volume
+            {{- end }}
             - mountPath: /usr/local/bin/shutdown-worker.sh
               name: shutdown-volume
               subPath: shutdown-worker.sh

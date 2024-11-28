@@ -164,6 +164,7 @@ data:
     {{- .Values.resourceGroups.resourceGroupsConfig | nindent 4 }}
 {{- end }}
 ---
+{{- if .Values.kafka.tableDescriptions }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -176,3 +177,4 @@ data:
   {{- range $key, $val := .Values.kafka.tableDescriptions }}
   {{ $key }}: {{ $val | quote }}
   {{- end }}
+{{- end }}
