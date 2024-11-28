@@ -63,6 +63,9 @@ data:
     {{- .Values.server.workerExtraConfig | nindent 4 }}
     {{- end }}
 
+  access-control.properties: |
+    access-control.name=allow-all
+
 {{ if ne .Values.server.config.retryPolicy "NONE" }}
   exchange-manager.properties: |
     exchange-manager.name={{ .Values.server.exchangeManager.name }}
