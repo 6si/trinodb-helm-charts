@@ -10,6 +10,7 @@ metadata:
     {{- tpl (toYaml .Values.coordinator.labels) . | nindent 4 }}
     {{- end }}
 spec:
+  replicas: 1
   selector:
     matchLabels:
       {{- include "trino.selectorLabels" . | nindent 6 }}
