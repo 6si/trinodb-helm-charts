@@ -21,6 +21,10 @@ spec:
       targetPort: {{ $value.port }}
       protocol: {{ $value.protocol }}
     {{- end }}
+  {{ if eq .Values.service.type "LoadBalancer" }}
+  loadBalancerSourceRanges:
+    - "10.0.0.0/8"
+  {{- end }}
   selector:
     {{- include "trino.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: coordinator
