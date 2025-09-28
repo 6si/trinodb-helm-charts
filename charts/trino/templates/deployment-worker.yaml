@@ -93,7 +93,7 @@ spec:
         - name: {{ .Chart.Name }}-worker
           image: {{ include "trino.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: [ "bash", "-c", "source /etc/profile && /usr/lib/trino/bin/run-trino" ]
+          command: [ "bash", "-c", "source /tmp/trino/vars/trino-init.sh && rm /tmp/trino/vars/trino-init.sh && /usr/lib/trino/bin/run-trino" ]
           securityContext:
             {{- toYaml .Values.containerSecurityContext | nindent 12 }}
           env:
