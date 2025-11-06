@@ -31,6 +31,10 @@ spec:
         {{- tpl (toYaml .Values.coordinator.labels) . | nindent 8 }}
         {{- end }}
     spec:
+      dnsConfig:
+        options:
+          - name: ndots
+            value: '1'
       serviceAccountName: {{ include "trino.serviceAccountName" . }}
       {{- with .Values.securityContext }}
       securityContext:
