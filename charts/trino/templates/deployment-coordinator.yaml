@@ -111,14 +111,14 @@ spec:
         {{- toYaml .Values.imagePullSecrets | nindent 8 }}
       terminationGracePeriodSeconds: {{ .Values.coordinator.terminationGracePeriodSeconds }}
       containers:
-        - name: {{ .Chart.Name }}-coordinator
+        - name: {{ .Values.coordinator.containerNameOverride | default (printf "%s-coordinator" .Chart.Name) }}
           image: {{ include "trino.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: [ "bash", "-c", "source /etc/profile && /usr/lib/trino/bin/run-trino" ]
           securityContext:
             {{- toYaml .Values.containerSecurityContext | nindent 12 }}
           env:
-            {{- toYaml .Values.env | nindent 12 }}
+            {{- toYaml .Values.trino_env | nindent 12 }}
           envFrom:
             {{- toYaml .Values.envFrom | nindent 12 }}
           volumeMounts:
