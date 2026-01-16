@@ -14,7 +14,6 @@
 nameOverride:
 coordinatorNameOverride:
 workerNameOverride:
-
 image:
   # -- Image registry, defaults to empty, which results in DockerHub usage
   registry: ""
@@ -274,8 +273,8 @@ additionalCatalogs: {}
 #    memory.max-data-per-node=128MB
 # ```
 
-env: []
-# env -- additional environment variables added to every pod, specified as a list with explicit values
+trino_env: []
+# trino_env -- additional environment variables added to every pod, specified as a list with explicit values
 # @raw
 # Example:
 # ```yaml
@@ -400,6 +399,9 @@ secretMounts: []
 # ```
 
 coordinator:
+  # coordinator.containerNameOverride -- Override the container name for the coordinator
+  containerNameOverride:
+
   jvm:
     maxHeapSize: "8G"
     gcMethod:
@@ -540,6 +542,9 @@ coordinator:
   #    path: /secrets/sample.json
 
 worker:
+  # worker.containerNameOverride -- Override the container name for the worker
+  containerNameOverride:
+
   jvm:
     maxHeapSize: "8G"
     gcMethod:

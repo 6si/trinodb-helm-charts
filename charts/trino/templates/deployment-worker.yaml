@@ -94,14 +94,14 @@ spec:
       #trino-worker waits 2x grace-periods and then give 1x grace-period for pod shutdown. So, taking max of pod terminationGracePeriodSeconds and 3x grace-periods.
       terminationGracePeriodSeconds: {{ max .Values.worker.terminationGracePeriodSeconds (mul .Values.server.config.shutdownGracePeriodSecs 3) }}
       containers:
-        - name: {{ .Chart.Name }}-worker
+        - name: {{ .Values.worker.containerNameOverride | default (printf "%s-worker" .Chart.Name) }}
           image: {{ include "trino.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: [ "bash", "-c", "source /etc/profile && /usr/lib/trino/bin/run-trino" ]
           securityContext:
             {{- toYaml .Values.containerSecurityContext | nindent 12 }}
           env:
-            {{- toYaml .Values.env | nindent 12 }}
+            {{- toYaml .Values.trino_env | nindent 12 }}
           envFrom:
             {{- toYaml .Values.envFrom | nindent 12 }}
           volumeMounts:
