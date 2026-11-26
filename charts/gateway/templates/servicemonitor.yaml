@@ -1,0 +1,25 @@
+{{- if .Values.serviceMonitor.enabled -}}
+{{/* the service names its first port from service.ports[0], so follow it rather than assume */}}
+{{- $servicePort := .Values.service.ports | default list | first | default dict -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "trino-gateway.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- $labels := include "trino-gateway.labels" . | fromYaml }}
+    {{- range $key, $value := .Values.serviceMonitor.labels }}
+    {{- $_ := set $labels $key $value }}
+    {{- end }}
+    {{- toYaml $labels | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "trino-gateway.selectorLabels" . | nindent 6 }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    - port: {{ $servicePort.name | default "gateway" }}
+      interval: {{ .Values.serviceMonitor.interval }}
+{{- end }}

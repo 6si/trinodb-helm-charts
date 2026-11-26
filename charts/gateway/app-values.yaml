@@ -1,0 +1,136 @@
+# Subset of values.yaml surfaced in Devtron's Deployment Template UI.
+# Secrets (e.g. config.dataStore.password) are intentionally excluded here —
+# they are supplied via Devtron/Kubernetes secrets, not plaintext values.
+
+replicaCount: 1
+
+image:
+  repository: "trinodb/trino-gateway"
+  pullPolicy: IfNotPresent
+  tag: ""
+
+config:
+  serverConfig:
+    node.environment: ${ENVIRONMENT}
+    http-server.http.enabled: true
+    # Required behind the ALB: Jetty/Airlift rejects X-Forwarded-For by default (mode REJECT).
+    # ACCEPT trusts the proxy's forwarded headers, needed so the gateway sees the real client IP/proto.
+    http-server.process-forwarded: "true"
+  dataStore:
+    # -- The connection details for the backend database for Trino Gateway and Trino query history
+    jdbcUrl: ${TRINO_GATEWAY_JDBC_DATABASE_URL}
+    user: ${DB_USER}
+    password: ${DB_PASS}
+    driver: com.mysql.cj.jdbc.Driver
+    # Must stay above the coordinators' oauth2 challenge-timeout (Trino default 15m),
+    # or the gateway logs a warning and pins can expire mid-handshake.
+    oauth2RoutingRetention: "20m"
+  clusterStatsConfiguration:
+    monitorType: INFO_API
+  routing:
+    # Only the coordinator that issued an OAuth2 401 challenge holds the in-memory
+    # handshake state (authId); this pins every later request of that same handshake
+    # (poll loop, initiate redirect, callback) back to that coordinator via a DB-backed
+    # pin, instead of a static routing rule. See docs/routing-logic.md.
+    oauth2RoutingEnabled: true
+    # default 2000; only raise if login volume genuinely exceeds this
+    oauth2RoutingMaxPinWritesPerSecond: 2000
+  # Routing-group pause/resume (persisted in the new routing_groups table) is managed via the
+  # gateway/routingGroups REST endpoints; it has no dedicated config section yet because the
+  # webapp UI page for it is deferred to a follow-up pass (see DECISIONS.md).
+  routingRules:
+    # Trino CLI's --client-tags has no way to set the X-Trino-Routing-Group header directly,
+    # so without this the CLI can never select a non-default routing group. The rules file
+    # (files/routing_rules.yml) keeps header-based routing working as before and additionally
+    # maps X-Trino-Client-Tags to a routing group for CLI/JDBC clients.
+    rulesEngineEnabled: true
+    rulesType: FILE
+    rulesConfigPath: "/etc/trino-gateway/routing_rules.yml"
+    rulesRefreshPeriod: 1m
+
+command:
+  - "java"
+  - "-XX:MinRAMPercentage=80.0"
+  - "-XX:MaxRAMPercentage=80.0"
+  - "-jar"
+  - "/usr/lib/trino-gateway/gateway-ha-jar-with-dependencies.jar"
+  - "/etc/trino-gateway/config.yaml"
+
+service:
+  # NodePort (matching presto-gateway's existing Service) — required by the ALB ingress's
+  # target-type: instance, which needs a NodePort/LoadBalancer Service, not ClusterIP.
+  type: NodePort
+  ports:
+    - protocol: TCP
+      name: gateway
+
+ingress:
+  enabled: true
+  className: aws-alb
+  annotations:
+    externaldns-route53-hosted-zone: private
+    external-dns.alpha.kubernetes.io/hostname: ${TRINO_GATEWAY_HOSTNAME}
+    external-dns.alpha.kubernetes.io/aws-weight: "100"
+    # Distinct from presto-gateway's set-identifier to avoid colliding
+    # in Route53 weighted-routing bookkeeping while both gateways run side by side.
+    external-dns.alpha.kubernetes.io/set-identifier: "${EXTERNAL_DNS_SET_IDENTIFIER}"
+    external-dns.alpha.kubernetes.io/ttl: "60"
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/tags: "Environment=${ENVIRONMENT},Role=trino-gateway,Role_suffix=${ROLE_SUFFIX},Version_suffix="
+    alb.ingress.kubernetes.io/subnets: "${ALB_SUBNETS}"
+    alb.ingress.kubernetes.io/security-groups: "${ALB_SECURITY_GROUPS}"
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80, "HTTPS": 443}]'
+    alb.ingress.kubernetes.io/target-type: instance
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    # trino-gateway has no /healthcheck route (that's presto-gateway's); its readiness
+    # endpoint is /trino-gateway/readyz, the same path the chart's own readinessProbe uses.
+    alb.ingress.kubernetes.io/healthcheck-path: /trino-gateway/readyz
+    alb.ingress.kubernetes.io/target-group-attributes: load_balancing.algorithm.type=least_outstanding_requests
+    alb.ingress.kubernetes.io/load-balancer-attributes: "idle_timeout.timeout_seconds=120,access_logs.s3.enabled=true,access_logs.s3.bucket=${ALB_LOGS_BUCKET},access_logs.s3.prefix=${ALB_LOGS_PREFIX}"
+    alb.ingress.kubernetes.io/certificate-arn: "${ACM_CERTIFICATE_ARN}"
+    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-Res-2021-06
+    alb.ingress.kubernetes.io/actions.ssl-redirect: '{"Type": "redirect", "RedirectConfig": { "Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}'
+  hosts:
+    - host: ${TRINO_GATEWAY_HOSTNAME}
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    cpu: 2
+    memory: 4Gi
+  requests:
+    cpu: 2
+    memory: 4Gi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: ""
+
+livenessProbe:
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 3
+  timeoutSeconds: 1
+  scheme: HTTP
+
+readinessProbe:
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  failureThreshold: 12
+  timeoutSeconds: 1
+  scheme: HTTP
+
+serviceAccount:
+  create: true
+  automount: true
+  name: ""
+
+podDisruptionBudget:
+  minAvailable: 1

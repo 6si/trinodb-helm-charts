@@ -1,0 +1,14 @@
+---
+name: "explicit-routing-group-header"
+description: "Back-compat: honor X-Trino-Routing-Group directly when a client sets it."
+priority: 0
+condition: "request.getHeader(\"X-Trino-Routing-Group\") != null"
+actions:
+  - "result.put(FileBasedRoutingGroupSelector.RESULTS_ROUTING_GROUP_KEY, request.getHeader(\"X-Trino-Routing-Group\"))"
+---
+name: "client-tags-as-routing-group"
+description: "Generic: use the X-Trino-Client-Tags value as the routing group name, so --client-tags works for any currently-registered group without editing this file."
+priority: 1
+condition: "request.getHeader(\"X-Trino-Routing-Group\") == null && request.getHeader(\"X-Trino-Client-Tags\") != null && !request.getHeader(\"X-Trino-Client-Tags\").isEmpty()"
+actions:
+  - "result.put(FileBasedRoutingGroupSelector.RESULTS_ROUTING_GROUP_KEY, request.getHeader(\"X-Trino-Client-Tags\").split(\",\")[0].trim())"
