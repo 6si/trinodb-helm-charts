@@ -5,15 +5,3 @@ server:
    enabled: false
 dbMigrationConfig:
   enabled: false
-
-pauseForSecondsBeforeSwitchActive: 0
-waitForSecondsBeforeScalingDown: 0
-autoPromotionSeconds: 30
-
-#used for deployment algo selection
-orchestrator.deploymant.algo: 1
-
-# Maps the injected image onto this chart's own image values.
-image:
-  repository: IMAGE_REPO
-  tag: IMAGE_TAG
