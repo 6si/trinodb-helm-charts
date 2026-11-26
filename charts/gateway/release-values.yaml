@@ -1,5 +1,19 @@
-# Devtron release values. Devtron substitutes IMAGE_REPO / IMAGE_TAG with the
-# image built for the release. Keys match this chart's `image` values.
+server:
+ deployment:
+   image_tag: IMAGE_TAG
+   image: IMAGE_REPO
+   enabled: false
+dbMigrationConfig:
+  enabled: false
+
+pauseForSecondsBeforeSwitchActive: 0
+waitForSecondsBeforeScalingDown: 0
+autoPromotionSeconds: 30
+
+#used for deployment algo selection
+orchestrator.deploymant.algo: 1
+
+# Maps the injected image onto this chart's own image values.
 image:
   repository: IMAGE_REPO
   tag: IMAGE_TAG
